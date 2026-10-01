@@ -1,0 +1,36 @@
+{
+    "name": "koslibs-builder-ui-example",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "start": "koslibs-builder ui:start",
+        "dev": "npm run start",
+        "build": "koslibs-builder ui:build",
+        "preview": "koslibs-builder ui:preview",
+        "typecheck": "koslibs-builder ui:typecheck",
+        "test": "koslibs-builder ui:test",
+        "test:watch": "koslibs-builder ui:test:watch",
+        "test:coverage": "koslibs-builder ui:test:coverage",
+        "test:e2e": "koslibs-builder ui:test:e2e",
+        "test:screenshots": "koslibs-builder ui:test:screenshots",
+        "storybook:start": "koslibs-builder storybook:start",
+        "storybook:build": "koslibs-builder storybook:build",
+        "lint": "koslibs-lint lint",
+        "lint:fix": "koslibs-lint lint:fix",
+        "lint:js": "koslibs-lint js",
+        "lint:js:fix": "koslibs-lint js --fix",
+        "format": "koslibs-lint format",
+        "format:check": "koslibs-lint format:check"
+    },
+    "dependencies": {
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+    },
+    "devDependencies": {
+        "@koslibs/builder": "^0.1.0",
+        "@koslibs/configs": "^0.2.11",
+        "@types/node": "^24.0.0",
+        "@types/react": "^18.3.0",
+        "@types/react-dom": "^18.3.0"
+    }
+}

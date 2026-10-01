@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.cache/
+.rstack/
+coverage/
+storybook-static/
+playwright-report/
+test-results/
+.env.local
+.env.*.local
+*.tgz

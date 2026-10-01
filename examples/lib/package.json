@@ -1,0 +1,43 @@
+{
+    "name": "koslibs-builder-lib-example",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "start": "koslibs-builder lib:start",
+        "watch": "koslibs-builder lib:watch",
+        "build": "koslibs-builder lib:build",
+        "typecheck": "koslibs-builder lib:typecheck",
+        "test": "koslibs-builder lib:test",
+        "test:watch": "koslibs-builder lib:test:watch",
+        "test:coverage": "koslibs-builder lib:test:coverage",
+        "test:e2e": "koslibs-builder lib:test:e2e",
+        "test:screenshots": "koslibs-builder lib:test:screenshots",
+        "storybook:start": "koslibs-builder storybook:start",
+        "storybook:build": "koslibs-builder storybook:build",
+        "lint": "koslibs-lint lint",
+        "lint:fix": "koslibs-lint lint:fix",
+        "lint:js": "koslibs-lint js",
+        "lint:js:fix": "koslibs-lint js --fix",
+        "format": "koslibs-lint format",
+        "format:check": "koslibs-lint format:check"
+    },
+    "peerDependencies": {
+        "react": "^18.3.1 || ^19.0.0"
+    },
+    "devDependencies": {
+        "@koslibs/builder": "^0.1.0",
+        "@koslibs/configs": "^0.2.11",
+        "@types/node": "^24.0.0",
+        "@types/react": "^18.3.0",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+    }
+}

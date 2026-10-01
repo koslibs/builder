@@ -1,0 +1,8 @@
+{
+    "extends": "@koslibs/configs/tsconfig/node",
+    "compilerOptions": {
+        "target": "ES2022",
+        "verbatimModuleSyntax": true
+    },
+    "include": ["src", "tests", "rstest.config.ts"]
+}
