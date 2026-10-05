@@ -25,6 +25,10 @@
             "types": "./dist/storybook/index.d.ts",
             "import": "./dist/storybook/index.js"
         },
+        "./storybook/blocks": {
+            "types": "./dist/storybook/blocks.d.ts",
+            "import": "./dist/storybook/blocks.js"
+        },
         "./testing": {
             "types": "./dist/testing/index.d.ts",
             "import": "./dist/testing/index.js"
@@ -42,6 +46,7 @@
     "files": [
         "dist",
         "README.md",
+        "CHANGELOG.md",
         "LICENSE"
     ],
     "scripts": {
@@ -59,33 +64,41 @@
         "format": "koslibs-lint format",
         "format:check": "koslibs-lint format:check",
         "prepack": "node scripts/build.mjs",
-        "version-package:patch": "npm version patch --no-git-tag-version",
-        "release": "npm publish --access public"
+        "changeset": "koslibs-release add",
+        "changeset:check": "koslibs-release check",
+        "version-package": "koslibs-release version",
+        "release": "koslibs-release publish",
+        "prepare": "koslibs-release hooks:install"
+    },
+    "commitlint": {
+        "extends": [
+            "@koslibs/configs/commitlint"
+        ]
     },
     "dependencies": {
         "@playwright/test": "1.63.0",
         "@rsbuild/core": "2.2.11",
         "@rsbuild/plugin-react": "2.1.1",
-        "@rsbuild/plugin-type-check": "1.6.0",
         "@rslib/core": "1.0.3",
         "@rstest/core": "0.12.3",
         "@rstest/coverage-istanbul": "0.12.3",
         "@storybook/addon-docs": "10.6.1",
+        "@storybook/react-vite": "10.6.1",
         "happy-dom": "20.14.5",
         "storybook": "10.6.1",
-        "storybook-react-rsbuild": "3.6.0",
-        "typescript": "5.9.3"
+        "typescript": "6.0.3",
+        "vite": "8.3.2"
     },
     "devDependencies": {
-        "@koslibs/configs": "0.2.11",
-        "@types/node": "^24.0.0",
-        "@types/react": "^18.3.0",
-        "@types/react-dom": "^18.3.0",
-        "react": "18.3.1",
-        "react-dom": "18.3.1"
+        "@koslibs/configs": "1.0.0",
+        "@types/node": "^24.19.1",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "react": "19.3.0",
+        "react-dom": "19.3.0"
     },
     "peerDependencies": {
-        "@koslibs/configs": "^0.2.11",
+        "@koslibs/configs": "^1.0.0",
         "react": "^18.3.1 || ^19.0.0",
         "react-dom": "^18.3.1 || ^19.0.0"
     },

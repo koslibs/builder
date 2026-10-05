@@ -2,6 +2,8 @@ import { loadBuilderConfig } from '../../configs/load.js';
 import { createUiConfig } from '../../configs/ui.js';
 import { closeOnSignal } from '../process.js';
 
+import { watchTypecheck } from './typecheck.js';
+
 export async function runUi(command: string, root: string): Promise<void> {
     const config = await loadBuilderConfig(root);
     const { createRsbuild } = await import('@rsbuild/core');
@@ -12,7 +14,7 @@ export async function runUi(command: string, root: string): Promise<void> {
     });
     if (command === 'ui:start') {
         const result = await rsbuild.startDevServer();
-        closeOnSignal(() => result.server.close());
+        await watchTypecheck(root, () => result.server.close());
     } else if (command === 'ui:preview') {
         const result = await rsbuild.preview();
         closeOnSignal(() => result.server.close());

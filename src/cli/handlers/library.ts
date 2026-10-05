@@ -1,7 +1,8 @@
 import { writeLibraryTsconfig } from '../../configs/generated.js';
 import { createLibraryConfig } from '../../configs/library.js';
 import { loadBuilderConfig } from '../../configs/load.js';
-import { closeOnSignal } from '../process.js';
+
+import { watchTypecheck } from './typecheck.js';
 
 export async function runLibrary(command: string, root: string): Promise<void> {
     const config = await loadBuilderConfig(root);
@@ -13,7 +14,7 @@ export async function runLibrary(command: string, root: string): Promise<void> {
     });
     const result = await rslib.build({ watch: command === 'lib:watch' });
     if (command === 'lib:watch') {
-        closeOnSignal(() => result.close());
+        await watchTypecheck(root, () => result.close());
     } else {
         await result.close();
     }

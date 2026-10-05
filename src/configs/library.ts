@@ -6,7 +6,7 @@ import type { RslibConfig } from '@rslib/core';
 
 import type { KoslibsBuilderConfig } from '../typings/config.js';
 
-import { typeCheckPlugin, typescriptPath } from './typescript.js';
+import { typescriptPath } from './typescript.js';
 
 export function createLibraryConfig(
     config: KoslibsBuilderConfig,
@@ -34,7 +34,6 @@ export function createLibraryConfig(
     );
     return {
         ...merged,
-        plugins: [...(merged.plugins ?? []), ...(watch ? [typeCheckPlugin(root)] : [])],
         lib: [
             {
                 format: 'esm',

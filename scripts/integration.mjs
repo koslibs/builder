@@ -4,7 +4,9 @@ import { cp, mkdir, mkdtemp, readFile, readdir, symlink, writeFile } from 'node:
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { verifyStorybook } from './storybook-browser.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
@@ -129,8 +131,40 @@ assert.ok(
     'tests and stories should not be published'
 );
 await run('lib:test', lib);
+await writeFile(
+    resolve(lib, '.env.production'),
+    'PUBLIC_STORYBOOK_MESSAGE=storybook-public-value\nPRIVATE_STORYBOOK_TOKEN=storybook-private-value'
+);
+await mkdir(resolve(lib, '.storybook'), { recursive: true });
+await writeFile(
+    resolve(lib, '.storybook/preview.tsx'),
+    `declare const __STORYBOOK_MARKER__: string;\n` +
+        `export default { decorators: [(Story: any) => <section data-build-marker={__STORYBOOK_MARKER__} data-public-env={import.meta.env.PUBLIC_STORYBOOK_MESSAGE}><Story /></section>] };\n`
+);
+await writeFile(
+    resolve(lib, 'koslibs-builder.ts'),
+    `export default { storybookViteConfig: { define: { __STORYBOOK_MARKER__: JSON.stringify('storybook-vite-setting') } } };\n`
+);
+await mkdir(resolve(lib, 'public'), { recursive: true });
+await writeFile(resolve(lib, 'public/probe.txt'), 'storybook-public-file');
 await run('storybook:build', lib);
 assert.ok((await readdir(resolve(lib, 'storybook-static'))).includes('index.html'));
+const storybookAssets = (await readdir(resolve(lib, 'storybook-static/assets'))).filter((file) =>
+    file.endsWith('.js')
+);
+const storybookJs = (
+    await Promise.all(
+        storybookAssets.map((file) =>
+            readFile(resolve(lib, 'storybook-static/assets', file), 'utf8')
+        )
+    )
+).join('\n');
+assert.ok(storybookJs.includes('storybook-public-value'), 'Storybook loads PUBLIC_ env values');
+assert.ok(storybookJs.includes('storybook-vite-setting'), 'Storybook uses storybookViteConfig');
+assert.ok(
+    !storybookJs.includes('storybook-private-value'),
+    'Storybook excludes private env values'
+);
 
 const badUi = await fixture('invalid ui', 'ui');
 await writeFile(resolve(badUi, 'src/type-error.ts'), "export const bad: number = 'wrong';");
@@ -138,6 +172,7 @@ assert.match(await run('ui:build', badUi, [], 1), /TS2322/);
 const badLib = await fixture('invalid lib', 'lib');
 await writeFile(resolve(badLib, 'src/type-error.ts'), "export const bad: number = 'wrong';");
 assert.match(await run('lib:build', badLib, [], 1), /TS2322/);
+assert.match(await run('storybook:build', badLib, [], 1), /TS2322/);
 await run('ui:typo', ui, [], 1);
 
 const port = await freePort();
@@ -176,8 +211,8 @@ try {
     const outputBeforeFix = devOutput.length;
     await writeFile(resolve(badUi, 'src/type-error.ts'), 'export const bad: number = 1;');
     await waitFor(
-        () => /ready\s+built/.test(devOutput.slice(outputBeforeFix)),
-        'development recompiles after correction',
+        () => /Found 0 errors/.test(devOutput.slice(outputBeforeFix)),
+        'background checker clears diagnostics after correction',
         () => devOutput
     );
     await run('ui:typecheck', badUi);
@@ -204,6 +239,7 @@ try {
         'library background type checking',
         () => libraryWatchOutput
     );
+    const libraryOutputBeforeFix = libraryWatchOutput.length;
     await writeFile(resolve(badLib, 'src/type-error.ts'), 'export const bad: number = 1;');
     await waitFor(
         async () => {
@@ -221,6 +257,11 @@ try {
         'library declarations recover after type fix',
         () => libraryWatchOutput
     );
+    await waitFor(
+        () => /Found 0 errors/.test(libraryWatchOutput.slice(libraryOutputBeforeFix)),
+        'library checker clears diagnostics after correction',
+        () => libraryWatchOutput
+    );
     assert.equal(libraryWatch.exitCode, null, 'watch must stay alive after a type error');
     await run('lib:typecheck', badLib);
     console.info('PASS library watch, background type checking and recovery');
@@ -229,7 +270,87 @@ try {
     await writeFile(resolve(directory, 'lib-watch.log'), libraryWatchOutput);
 }
 
+// Exercise graceful watcher shutdown independently of Windows' forced process termination.
+const watcherModule = pathToFileURL(resolve(root, 'dist/cli/handlers/typecheck.js')).href;
+const shutdownScript = resolve(directory, 'watcher-shutdown.mjs');
+await writeFile(
+    shutdownScript,
+    `import { watchTypecheck } from ${JSON.stringify(watcherModule)};\n` +
+        `const stop = await watchTypecheck(${JSON.stringify(ui)}, async () => console.log('OWNER CLOSED'));\n` +
+        `await Promise.all([stop(), stop()]);\nconsole.log('CHECKER STOPPED');\n`
+);
+const shutdown = spawnSync(process.execPath, [shutdownScript], {
+    encoding: 'utf8',
+    timeout: 20000,
+});
+assert.ifError(shutdown.error);
+assert.equal(shutdown.status, 0, shutdown.stdout + shutdown.stderr);
+assert.match(shutdown.stdout, /CHECKER STOPPED/);
+assert.equal(shutdown.stdout.match(/OWNER CLOSED/g)?.length, 1);
+console.info('PASS type checker shutdown and idempotent owner cleanup');
+
+const failureScript = resolve(directory, 'watcher-failure.mjs');
+await writeFile(
+    failureScript,
+    `import { watchTypecheck } from ${JSON.stringify(watcherModule)};\n` +
+        `await watchTypecheck(${JSON.stringify(directory)}, async () => console.log('OWNER CLOSED'));\n`
+);
+const failure = spawnSync(process.execPath, [failureScript], { encoding: 'utf8', timeout: 20000 });
+assert.ifError(failure.error);
+assert.equal(failure.status, 1, failure.stdout + failure.stderr);
+assert.match(failure.stdout, /OWNER CLOSED/);
+assert.match(failure.stderr, /exited unexpectedly/);
+console.info('PASS unexpected type checker exit stops its owner');
+
+const storybookPort = await freePort();
+await writeFile(resolve(badLib, 'src/type-error.ts'), "export const bad: number = 'wrong';");
+const storybookDev = spawn(
+    process.execPath,
+    [cli, 'storybook:start', '--root', badLib, '--port', String(storybookPort)],
+    {
+        cwd: root,
+        stdio: ['ignore', 'pipe', 'pipe'],
+    }
+);
+let storybookOutput = '';
+storybookDev.stdout.on('data', (data) => {
+    storybookOutput += data;
+});
+storybookDev.stderr.on('data', (data) => {
+    storybookOutput += data;
+});
+try {
+    await waitFor(
+        async () => {
+            try {
+                return (await fetch(`http://localhost:${storybookPort}/index.json`)).ok;
+            } catch {
+                return false;
+            }
+        },
+        'Storybook dev starts despite type errors',
+        () => storybookOutput
+    );
+    await waitFor(
+        () => /TS2322/.test(storybookOutput),
+        'Storybook background type check',
+        () => storybookOutput
+    );
+    const outputBeforeFix = storybookOutput.length;
+    await writeFile(resolve(badLib, 'src/type-error.ts'), 'export const bad: number = 1;');
+    await waitFor(
+        () => /Found 0 errors/.test(storybookOutput.slice(outputBeforeFix)),
+        'Storybook checker recovery',
+        () => storybookOutput
+    );
+    console.info('PASS Storybook dev, background type checking and recovery');
+} finally {
+    stopChild(storybookDev);
+    await writeFile(resolve(directory, 'storybook-dev.log'), storybookOutput);
+}
+
 if (process.env.KOSLIBS_BROWSER_TESTS === '1') {
     await run('ui:test:e2e', ui);
+    await verifyStorybook(lib);
 }
 console.info('Integration checks passed.');

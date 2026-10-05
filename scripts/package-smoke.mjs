@@ -5,6 +5,9 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const builderDependencies = JSON.parse(
+    await readFile(resolve(root, 'package.json'), 'utf8')
+).devDependencies;
 const npmCache = resolve(root, '.cache/npm-cache');
 const npm = process.env.npm_execpath;
 if (!npm) {
@@ -50,10 +53,10 @@ await cp(resolve(root, 'examples/ui'), directory, copyOptions);
 const manifest = JSON.parse(await readFile(resolve(directory, 'package.json'), 'utf8'));
 manifest.devDependencies = {
     '@koslibs/builder': `file:${archive.replaceAll('\\', '/')}`,
-    '@koslibs/configs': '0.2.11',
-    '@types/node': '24.19.0',
-    '@types/react': '18.3.31',
-    '@types/react-dom': '18.3.7',
+    '@koslibs/configs': builderDependencies['@koslibs/configs'],
+    '@types/node': builderDependencies['@types/node'],
+    '@types/react': builderDependencies['@types/react'],
+    '@types/react-dom': builderDependencies['@types/react-dom'],
 };
 await writeFile(resolve(directory, 'package.json'), JSON.stringify(manifest, null, 4));
 run(
@@ -62,6 +65,12 @@ run(
     directory
 );
 const builderRoot = resolve(directory, 'node_modules/@koslibs/builder');
+const lock = JSON.parse(await readFile(resolve(directory, 'package-lock.json'), 'utf8'));
+assert.ok(
+    !Object.keys(lock.packages).some((name) => name.endsWith('node_modules/braces')),
+    'a fresh consumer must not install braces'
+);
+run(npm, ['audit', '--cache', npmCache, '--fetch-retries=0', '--fetch-timeout=15000'], directory);
 const builderManifest = JSON.parse(await readFile(resolve(builderRoot, 'package.json'), 'utf8'));
 const cli = resolve(builderRoot, builderManifest.bin['koslibs-builder']);
 run(cli, ['ui:build'], directory);
@@ -71,6 +80,7 @@ assert.match(await readFile(resolve(directory, 'dist/index.html'), 'utf8'), /sta
 const library = resolve(directory, 'library');
 await cp(resolve(root, 'examples/lib'), library, copyOptions);
 run(cli, ['lib:build', '--root', library], directory);
+run(cli, ['storybook:build', '--root', library], directory);
 assert.match(await readFile(resolve(library, 'dist/index.d.ts'), 'utf8'), /Button/);
 assert.match(await readFile(resolve(library, 'dist/button.js'), 'utf8'), /react\/jsx-runtime/);
 console.info(`Packed consumer check passed: ${directory}`);

@@ -37,5 +37,8 @@ describe('project configuration contract', () => {
         }
         expect(() => normalizeConfig(null)).toThrow('default-export');
         expect(() => normalizeConfig({ clientConfig: [] })).toThrow('clientConfig must be');
+        expect(() => normalizeConfig({ storybookViteConfig: [] })).toThrow(
+            'storybookViteConfig must be'
+        );
     });
 });
