@@ -2,23 +2,21 @@
 
 Единый CLI для React-приложений, ESM-библиотек, Storybook и тестов.
 UI собирается через Rsbuild, библиотеки — через Rslib. Оба используют Rspack.
+Storybook собирается через Vite.
 
 ## Подключение
 
 Node.js >= 24.13.0. Builder устанавливается в devDependencies:
 
 ```sh
-npm install @koslibs/api @koslibs/components
 npm install --save-dev @koslibs/builder @koslibs/configs @types/react @types/react-dom @types/node
 ```
 
-`@koslibs/configs` — обязательная peer-зависимость builder с диапазоном `^0.2.11`.
+`@koslibs/configs` — обязательная peer-зависимость builder с диапазоном `^1.0.0`.
 Builder использует версию configs, установленную в проекте.
 
-Первая строка — целевая схема подключения runtime-пакетов: она применима, когда
-нужные версии API и components опубликованы. Builder не устанавливает эти пакеты автоматически
-и не требует их наличия для работы. React и react-dom устанавливаются самим приложением.
-Поддерживаются React 18.3 и 19; совместимость остальных пакетов нужно учитывать отдельно.
+Builder использует TypeScript 6.0.3. TypeScript 7 пока не используется: генератор
+типов свойств Storybook зависит от API компилятора TypeScript 6.
 
 В корне проекта создаётся `koslibs-builder.ts`:
 
@@ -45,6 +43,7 @@ export default config;
 interface KoslibsBuilderConfig {
     rsbuildConfig?: RsbuildConfig;
     clientConfig?: EnvironmentConfig;
+    storybookViteConfig?: UserConfig;
     port?: number;
 }
 ```
@@ -75,7 +74,8 @@ export default config;
 → клиентское окружение `clientConfig`. В UI это окружение называется `client`.
 `port` имеет приоритет над `rsbuildConfig.server.port`, затем используется 8080.
 Занятый порт вызывает ошибку вместо незаметного переключения на другой.
-`clientConfig` используется для UI и Storybook, для сборки библиотеки он игнорируется.
+`clientConfig` используется только для UI. `rsbuildConfig` используется для UI и библиотек.
+Для Storybook предназначен `storybookViteConfig`; настройки Rsbuild в Vite не переносятся.
 
 ## Scripts приложения
 
@@ -115,6 +115,7 @@ HTML можно изменить через `clientConfig.html`; для обыч
     "extends": "@koslibs/configs/tsconfig",
     "compilerOptions": {
         "types": ["@koslibs/builder/client"],
+        "esModuleInterop": true,
         "jsx": "react-jsx"
     },
     "include": ["src", "koslibs-builder.ts"]
@@ -122,6 +123,8 @@ HTML можно изменить через `clientConfig.html`; для обыч
 ```
 
 `@koslibs/builder/client` предоставляет типы CSS Modules, ресурсов и `import.meta.env`.
+Для TypeScript 6 нужно явно включить `esModuleInterop`: preset из `@koslibs/configs@1.0.0`
+задаёт устаревшее значение `false`.
 Для кода Node.js и конфигов, использующих `process`, добавь `@types/node` и `node` в `types`.
 При использовании библиотек или JSX также нужны соответствующие `@types/*`.
 
@@ -137,9 +140,10 @@ npm run typecheck
 зависимостей в package.json примера.
 
 `ui:build` сначала проверяет весь TS-проект и возвращает ненулевой код при ошибках.
-`ui:start` проверяет типы в отдельном процессе, показывает ошибки в терминале и overlay,
+`ui:start` запускает `tsc --noEmit --watch`, показывает ошибки в терминале,
 продолжает работать и повторяет проверку после исправлений. Dev-server не прекращает
 работу из-за исправимой ошибки типов. Проверку типов задаёт builder.
+Фоновый checker завершается вместе с dev-server; его неожиданное завершение останавливает сервер.
 
 ## Библиотеки
 
@@ -198,15 +202,47 @@ Builder не изменяет exports автоматически. Линтинг
 
 ## Storybook
 
-Builder управляет Rsbuild-framework, addon-docs, Controls, автодокументацией и stories
+Builder управляет Vite-framework, addon-docs, Controls, автодокументацией и stories
 из `src/**/*.stories.{ts,tsx,js,jsx,mjs}`. `.storybook/main.ts` не требуется и не читается:
 служебный main создаётся builder. При миграции старые addons и main-настройки нужно
 сверить отдельно. Для локальных decorators и parameters используется `.storybook/preview.ts`.
 Файлы `public` подключаются как статические ресурсы. Выход — `storybook-static`.
 
-Storybook использует `port`, проверяет типы, наследует подходящие общие настройки
-Rsbuild и клиентские настройки. Entry, HTML, server и distPath принадлежат Storybook
-и не переносятся из настроек сборки приложения. Неподдерживаемые поля builder-конфига,
+Блоки для собственных страниц Docs доступны через builder:
+
+```tsx
+import { Canvas, Controls, Title } from '@koslibs/builder/storybook/blocks';
+```
+
+Экспорт включает компоненты и типы `@storybook/addon-docs/blocks`. При миграции замените
+импорты из `@storybook/addon-docs/blocks` на `@koslibs/builder/storybook/blocks`.
+Если других прямых импортов `@storybook/addon-docs` нет, отдельную зависимость можно удалить:
+builder управляет её версией и подключением addon в Storybook.
+
+Storybook использует `port`. Перед production-сборкой запускается `tsc --noEmit`,
+в dev — отдельный `tsc --noEmit --watch`. TypeScript 6 остаётся для извлечения типов
+свойств компонентов в Docs/Controls.
+
+Настройки Storybook задаются через `storybookViteConfig` в `koslibs-builder.ts`:
+
+```ts
+import type { KoslibsBuilderConfig } from '@koslibs/builder';
+
+const config: KoslibsBuilderConfig = {
+    storybookViteConfig: {
+        define: { __API_URL__: JSON.stringify('https://api.example.test') },
+    },
+};
+
+export default config;
+```
+
+Это типизированные настройки Vite. Корень проекта задаёт builder; локальные
+`vite.config.*` не загружаются автоматически. CSS Modules и автоматический JSX runtime
+поддерживаются без дополнительных настроек. Vite загружает `.env` проекта и публикует
+переменные с префиксами `PUBLIC_` и `VITE_`. `rsbuildConfig`, `clientConfig` и плагины
+Rspack не применяются к Storybook: определения, алиасы и другие специальные настройки
+нужно перенести в соответствующие поля Vite. Неподдерживаемые поля builder-конфига,
 включая `storybookConfig`, игнорируются; расширение API для addons возможно следующим шагом.
 
 ## Тесты
@@ -238,7 +274,7 @@ import type { Meta, StoryObj } from '@koslibs/builder/storybook';
 ```
 
 Если используются прямые импорты `@playwright/test`, `@rstest/core` или
-`storybook-react-rsbuild`, эти пакеты должны быть прямыми devDependencies проекта.
+`@storybook/react-vite`, эти пакеты должны быть прямыми devDependencies проекта.
 Builder сам разрешает исполняемые файлы своих инструментов и не полагается на глобальную установку.
 
 Если проект имеет `rstest.config.*` или `playwright.config.*`, builder использует их.
@@ -274,6 +310,35 @@ const apiUrl = import.meta.env.PUBLIC_API_URL;
 Для переиспользуемых библиотек builder не загружает `.env` автоматически.
 Поведение описано в [документации Rsbuild](https://rsbuild.rs/guide/advanced/env-vars).
 
+## Релиз самого builder
+
+Релиз и Git hooks управляются `@koslibs/configs`. `npm install` / `npm ci` запускают
+`prepare` и устанавливают общий Lefthook preset: проверки перед commit, Commitlint
+и проверку Changeset перед push.
+
+Перед отправкой изменений создайте один Changeset для PR:
+
+```sh
+npm run changeset
+git add .changeset/*.md
+git commit -m "feat: describe the change"
+git push
+```
+
+Для следующих изменений в том же PR обновляйте существующий Changeset.
+Проверка перед push требует, чтобы файл был добавлен и закоммичен; версия пакета
+до релиза остаётся прежней. Для ручной проверки используется
+`npm run changeset:check -- --base origin/main --head HEAD`.
+
+В PR общий workflow запускает проверку `Changeset required`. После merge в `main`
+workflow проверяет npm-пакет и через `koslibs-release` обновляет версию и `CHANGELOG.md`,
+публикует пакет и отправляет релизный commit и Git tag. Повторный запуск доступен
+через `workflow_dispatch`. Общие workflows закреплены на теге configs `v1.0.0`.
+
+В настройках GitHub сделайте `Changeset required` обязательным для merge.
+Для публикации используется существующий `NPM_TOKEN` либо npm Trusted Publishing,
+настроенный для репозитория `koslibs/builder` и вызывающего workflow `release.yml`.
+
 ## Структура исходников
 
 ```text
@@ -298,4 +363,4 @@ src/
 
 Архитектурные источники: [Rsbuild](https://rsbuild.dev/guide/faq/general),
 [Rslib: сохранение структуры модулей](https://www.rslib.rs/config/lib/bundle),
-[Storybook Rsbuild](https://storybook.rsbuild.rs/guide/configuration).
+[Storybook Vite](https://storybook.js.org/docs/builders/vite).

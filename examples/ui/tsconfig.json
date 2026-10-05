@@ -2,6 +2,7 @@
     "extends": "@koslibs/configs/tsconfig",
     "compilerOptions": {
         "types": ["@koslibs/builder/client", "node"],
+        "esModuleInterop": true,
         "jsx": "react-jsx"
     },
     "include": ["src", "koslibs-builder.ts"]

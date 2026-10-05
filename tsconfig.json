@@ -2,6 +2,7 @@
     "extends": "@koslibs/configs/tsconfig/node",
     "compilerOptions": {
         "target": "ES2022",
+        "esModuleInterop": true,
         "verbatimModuleSyntax": true
     },
     "include": ["src", "tests", "rstest.config.ts"]

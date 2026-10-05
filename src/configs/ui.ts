@@ -7,7 +7,6 @@ import { pluginReact } from '@rsbuild/plugin-react';
 import type { KoslibsBuilderConfig } from '../typings/config.js';
 
 import { createClientDefaults, DEFAULT_PORT } from './defaults.js';
-import { typeCheckPlugin } from './typescript.js';
 
 function defaultEntry(root: string, names: string[]): string {
     return resolve(
@@ -35,6 +34,5 @@ export function createUiConfig(config: KoslibsBuilderConfig, root: string): Rsbu
     );
     return mergeRsbuildConfig(merged, {
         server: { port: config.port ?? config.rsbuildConfig?.server?.port ?? DEFAULT_PORT },
-        plugins: [typeCheckPlugin(root)],
     });
 }

@@ -6,6 +6,8 @@ import { loadBuilderConfig } from '../../configs/load.js';
 import { packageBin } from '../../utils/packages.js';
 import { runNode } from '../process.js';
 
+import { typecheck, watchTypecheck } from './typecheck.js';
+
 export async function runStorybook(command: string, root: string, args: string[]): Promise<number> {
     const config = await loadBuilderConfig(root);
     const generated = await writeGeneratedConfig(
@@ -15,6 +17,12 @@ export async function runStorybook(command: string, root: string, args: string[]
             `export default await createStorybookConfig(${JSON.stringify(root)});\n`
     );
     const dev = command.endsWith(':start');
+    if (!dev) {
+        const code = await typecheck(root);
+        if (code !== 0) {
+            return code;
+        }
+    }
     const flags = dev
         ? [
               'dev',
@@ -24,9 +32,23 @@ export async function runStorybook(command: string, root: string, args: string[]
               '--no-open',
           ]
         : ['build', '--output-dir', resolve(root, 'storybook-static')];
-    return runNode(
+    const controller = new AbortController();
+    const result = runNode(
         packageBin('storybook', 'storybook'),
         [...flags, '--config-dir', generated.directory, '--disable-telemetry', ...args],
-        root
+        root,
+        controller.signal
     );
+    if (!dev) {
+        return result;
+    }
+    const stop = await watchTypecheck(root, async () => {
+        controller.abort();
+        await result;
+    });
+    try {
+        return await result;
+    } finally {
+        await stop();
+    }
 }

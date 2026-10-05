@@ -1,0 +1,14 @@
+name: Changeset
+
+on:
+    pull_request:
+        branches: [main]
+
+permissions:
+    contents: read
+
+jobs:
+    changeset:
+        uses: koslibs/configs/.github/workflows/changeset-check.yml@v1.0.0
+        with:
+            node-version: '24.13.0'

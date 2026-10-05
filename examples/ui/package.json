@@ -23,14 +23,14 @@
         "format:check": "koslibs-lint format:check"
     },
     "dependencies": {
-        "react": "^18.3.1",
-        "react-dom": "^18.3.1"
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0"
     },
     "devDependencies": {
         "@koslibs/builder": "^0.1.0",
-        "@koslibs/configs": "^0.2.11",
-        "@types/node": "^24.0.0",
-        "@types/react": "^18.3.0",
-        "@types/react-dom": "^18.3.0"
+        "@koslibs/configs": "^1.0.0",
+        "@types/node": "^24.19.1",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0"
     }
 }
