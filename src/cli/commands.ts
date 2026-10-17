@@ -13,7 +13,5 @@ export const COMMANDS = [
         `${kind}:test`,
         `${kind}:test:watch`,
         `${kind}:test:coverage`,
-        `${kind}:test:e2e`,
-        `${kind}:test:screenshots`,
     ]),
 ];

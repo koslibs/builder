@@ -18,8 +18,6 @@
         "test": "koslibs-builder lib:test",
         "test:watch": "koslibs-builder lib:test:watch",
         "test:coverage": "koslibs-builder lib:test:coverage",
-        "test:e2e": "koslibs-builder lib:test:e2e",
-        "test:screenshots": "koslibs-builder lib:test:screenshots",
         "storybook:start": "koslibs-builder storybook:start",
         "storybook:build": "koslibs-builder storybook:build",
         "lint": "koslibs-lint lint",
@@ -33,7 +31,7 @@
         "react": "^18.3.1 || ^19.0.0"
     },
     "devDependencies": {
-        "@koslibs/builder": "^0.1.0",
+        "@koslibs/builder": "^2.0.0",
         "@koslibs/configs": "^1.0.0",
         "@types/node": "^24.19.1",
         "@types/react": "^19.3.0",

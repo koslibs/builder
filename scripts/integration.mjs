@@ -6,8 +6,6 @@ import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { verifyStorybook } from './storybook-browser.mjs';
-
 const root = fileURLToPath(new URL('../', import.meta.url));
 const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
 const cli = resolve(root, manifest.bin['koslibs-builder']);
@@ -117,8 +115,6 @@ assert.ok(
 );
 await run('ui:test', ui);
 await run('ui:test:coverage', ui);
-await run('ui:test:e2e', ui, ['--list']);
-await run('ui:test:screenshots', ui, ['--list']);
 
 const lib = await fixture('lib project', 'lib');
 await run('lib:build', lib);
@@ -349,8 +345,4 @@ try {
     await writeFile(resolve(directory, 'storybook-dev.log'), storybookOutput);
 }
 
-if (process.env.KOSLIBS_BROWSER_TESTS === '1') {
-    await run('ui:test:e2e', ui);
-    await verifyStorybook(lib);
-}
 console.info('Integration checks passed.');

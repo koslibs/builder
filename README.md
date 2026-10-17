@@ -88,8 +88,6 @@ export default config;
     "test": "koslibs-builder ui:test",
     "test:watch": "koslibs-builder ui:test:watch",
     "test:coverage": "koslibs-builder ui:test:coverage",
-    "test:e2e": "koslibs-builder ui:test:e2e",
-    "test:screenshots": "koslibs-builder ui:test:screenshots",
     "storybook:start": "koslibs-builder storybook:start",
     "storybook:build": "koslibs-builder storybook:build"
 }
@@ -158,8 +156,6 @@ Scripts используют префикс `lib` для build, typecheck и в�
     "test": "koslibs-builder lib:test",
     "test:watch": "koslibs-builder lib:test:watch",
     "test:coverage": "koslibs-builder lib:test:coverage",
-    "test:e2e": "koslibs-builder lib:test:e2e",
-    "test:screenshots": "koslibs-builder lib:test:screenshots",
     "storybook:start": "koslibs-builder storybook:start",
     "storybook:build": "koslibs-builder storybook:build"
 }
@@ -247,48 +243,21 @@ Rspack не применяются к Storybook: определения, али�
 
 ## Тесты
 
-Только Rstest и Playwright. Компонентного браузерного runner нет.
+Builder запускает unit-тесты через Rstest: `test`, `test:watch`, `test:coverage`.
+UI-тесты используют happy-dom, библиотечные — Node.js. Конфигурация проекта
+`rstest.config.*` имеет приоритет; иначе используется `createUnitTestConfig`
+из `@koslibs/builder/testing`.
 
-- `test` запускает unit-тесты один раз, `test:watch` следит за изменениями.
-- `test:coverage` создаёт отчёты text, HTML и lcov через Istanbul.
-- Дефолтные unit-тесты: `src` и `tests`, имена `*.test.*` и `*.spec.*`.
-- UI unit-тесты используют happy-dom и React preset configs; lib unit-тесты — Node.js.
-- Без тестов команда завершается с ошибкой.
-- Playwright E2E использует `playwright/**/*.spec.*`, исключая `*.screenshots.spec.*`.
-- Screenshot-suite использует `playwright/**/*.screenshots.spec.*`.
-- Playwright сам запускает UI dev-server, а для библиотеки — Storybook, на заданном порту.
-- Скриншоты сравниваются через `expect(page).toHaveScreenshot()`. Обновление существующих
-  эталонов — отдельное осознанное действие через `--update-snapshots`.
-
-Для браузерных тестов нужен установленный Chromium соответствующей версии Playwright.
-API тестов и типы stories доступны через builder, поэтому отдельные зависимости на
-тестовые инструменты в проекте не обязательны:
+Браузерные тесты и screenshots перенесены в отдельный пакет `@koslibs/playwright`.
+Установите его как прямую devDependency и используйте `koslibs-playwright test`.
+Команды `*:test:e2e` / `*:test:screenshots`, экспорт `./playwright`,
+`createBrowserTestConfig` и `BrowserTestKind` удалены в builder 2.
+В конфигурации браузерных тестов задавайте `webServer.command` и `url`
+явно; пакет браузерного тестирования не зависит от builder.
 
 ```ts
-// unit-тесты
 import { test, expect } from '@koslibs/builder/rstest';
-// Playwright-тесты (в другом файле)
-import { test, expect } from '@koslibs/builder/playwright';
-// типы stories
 import type { Meta, StoryObj } from '@koslibs/builder/storybook';
-```
-
-Если используются прямые импорты `@playwright/test`, `@rstest/core` или
-`@storybook/react-vite`, эти пакеты должны быть прямыми devDependencies проекта.
-Builder сам разрешает исполняемые файлы своих инструментов и не полагается на глобальную установку.
-
-Если проект имеет `rstest.config.*` или `playwright.config.*`, builder использует их.
-В пользовательском Playwright-конфиге помечай screenshot-тесты тегом `@screenshots`:
-builder выбирает E2E/screenshot-suite через grep. При таком конфиге запуск сервера
-и остальные настройки контролирует сам проект. Общие фабрики доступны из
-`@koslibs/builder/testing`, можно расширять их через обычные конфиги инструментов.
-Тестовые и Storybook-флаги передаются дальше:
-
-```sh
-npm run test -- greeting
-npm run test:e2e -- --list
-npm run test:screenshots -- --update-snapshots
-koslibs-builder ui:build --root ./frontend
 ```
 
 ## Переменные окружения
@@ -355,7 +324,7 @@ src/
   typings/             интерфейсы, типы и клиентские декларации
   utils/               общие функции для пакетов и shell-команд
   storybook/           публичная точка входа @koslibs/builder/storybook
-  testing/             публичные точки входа testing, rstest и playwright
+  testing/             публичные точки входа testing и rstest
 ```
 
 Тесты повторяют структуру модулей в `tests/cli` и `tests/configs`.

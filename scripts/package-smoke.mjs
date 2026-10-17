@@ -59,15 +59,13 @@ manifest.devDependencies = {
     '@types/react-dom': builderDependencies['@types/react-dom'],
 };
 await writeFile(resolve(directory, 'package.json'), JSON.stringify(manifest, null, 4));
-run(
-    npm,
-    ['install', '--prefer-offline', '--no-audit', '--no-fund', '--cache', npmCache],
-    directory
-);
+run(npm, ['install', '--prefer-online', '--no-audit', '--no-fund', '--cache', npmCache], directory);
 const builderRoot = resolve(directory, 'node_modules/@koslibs/builder');
 const lock = JSON.parse(await readFile(resolve(directory, 'package-lock.json'), 'utf8'));
 assert.ok(
-    !Object.keys(lock.packages).some((name) => name.endsWith('node_modules/braces')),
+    !Object.keys(lock.packages).some((name) =>
+        /node_modules\/(?:braces|@playwright\/test|playwright|playwright-core)$/.test(name)
+    ),
     'a fresh consumer must not install braces'
 );
 run(npm, ['audit', '--cache', npmCache, '--fetch-retries=0', '--fetch-timeout=15000'], directory);
@@ -75,7 +73,6 @@ const builderManifest = JSON.parse(await readFile(resolve(builderRoot, 'package.
 const cli = resolve(builderRoot, builderManifest.bin['koslibs-builder']);
 run(cli, ['ui:build'], directory);
 run(cli, ['ui:test'], directory);
-run(cli, ['ui:test:e2e', '--list'], directory);
 assert.match(await readFile(resolve(directory, 'dist/index.html'), 'utf8'), /static\/js/);
 const library = resolve(directory, 'library');
 await cp(resolve(root, 'examples/lib'), library, copyOptions);

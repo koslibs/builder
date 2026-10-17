@@ -7,6 +7,8 @@ import { parseArgs } from '../../src/cli/args.js';
 describe('project configuration contract', () => {
     test('keeps command parsing independent of project tooling', () => {
         expect(() => parseArgs(['ui:unknown'])).toThrow('Unknown command');
+        expect(() => parseArgs(['ui:test:e2e'])).toThrow('Unknown command');
+        expect(() => parseArgs(['lib:test:screenshots'])).toThrow('Unknown command');
         expect(() => parseArgs(['ui:build', '--root'])).toThrow('--root requires');
         const options = parseArgs(['ui:test', '--root', 'app', '--coverage'], process.cwd());
         expect(options.root).toBe(resolve('app'));
