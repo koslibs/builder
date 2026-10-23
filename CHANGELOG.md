@@ -1,5 +1,11 @@
 # @koslibs/builder
 
+## 2.0.1
+
+### Patch Changes
+
+- [#2](https://github.com/koslibs/builder/pull/2) [`b77e72f`](https://github.com/koslibs/builder/commit/b77e72fc0fb2b4dacd726ff52c9a4b6a2443a607) Thanks [@holypower777](https://github.com/holypower777)! - Update Storybook to 10.6.3 and Vite to 8.3.5 to fix development server and preview security vulnerabilities. Refresh the transitive launch-editor dependency to 2.14.2.
+
 ## 2.0.0
 
 ### Major Changes
