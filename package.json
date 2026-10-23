@@ -77,12 +77,12 @@
         "@rslib/core": "1.0.3",
         "@rstest/core": "0.12.3",
         "@rstest/coverage-istanbul": "0.12.3",
-        "@storybook/addon-docs": "10.6.1",
-        "@storybook/react-vite": "10.6.1",
+        "@storybook/addon-docs": "10.6.3",
+        "@storybook/react-vite": "10.6.3",
         "happy-dom": "20.14.5",
-        "storybook": "10.6.1",
+        "storybook": "10.6.3",
         "typescript": "6.0.3",
-        "vite": "8.3.2"
+        "vite": "8.3.5"
     },
     "devDependencies": {
         "@koslibs/configs": "^2.0.0",
