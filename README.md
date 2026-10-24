@@ -12,7 +12,7 @@ Node.js >= 24.13.0. Builder устанавливается в devDependencies:
 npm install --save-dev @koslibs/builder @koslibs/configs @types/react @types/react-dom @types/node
 ```
 
-`@koslibs/configs` — обязательная peer-зависимость builder с диапазоном `^1.0.0`.
+`@koslibs/configs` — обязательная peer-зависимость builder с диапазоном `^3.0.0`.
 Builder использует версию configs, установленную в проекте.
 
 Builder использует TypeScript 6.0.3. TypeScript 7 пока не используется: генератор
@@ -121,7 +121,7 @@ HTML можно изменить через `clientConfig.html`; для обыч
 ```
 
 `@koslibs/builder/client` предоставляет типы CSS Modules, ресурсов и `import.meta.env`.
-Для TypeScript 6 нужно явно включить `esModuleInterop`: preset из `@koslibs/configs@1.0.0`
+Для TypeScript 6 нужно явно включить `esModuleInterop`: preset из `@koslibs/configs@3.0.0`
 задаёт устаревшее значение `false`.
 Для кода Node.js и конфигов, использующих `process`, добавь `@types/node` и `node` в `types`.
 При использовании библиотек или JSX также нужны соответствующие `@types/*`.
@@ -244,9 +244,14 @@ Rspack не применяются к Storybook: определения, али�
 ## Тесты
 
 Builder запускает unit-тесты через Rstest: `test`, `test:watch`, `test:coverage`.
-UI-тесты используют happy-dom, библиотечные — Node.js. Конфигурация проекта
+UI-тесты используют jsdom, библиотечные — Node.js. Конфигурация проекта
 `rstest.config.*` имеет приоритет; иначе используется `createUnitTestConfig`
 из `@koslibs/builder/testing`.
+
+В builder 3 окружение UI-тестов изменено с Happy DOM на jsdom вслед за
+`@koslibs/configs@3`. Если локальный `rstest.config.*` явно задаёт `happy-dom`,
+измените его на `jsdom` и удалите ненужную прямую зависимость от `happy-dom`.
+Тесты, которые используют специфичные API Happy DOM, нужно адаптировать к jsdom.
 
 Браузерные тесты и screenshots перенесены в отдельный пакет `@koslibs/playwright`.
 Установите его как прямую devDependency и используйте `koslibs-playwright test`.
@@ -302,7 +307,7 @@ git push
 В PR общий workflow запускает проверку `Changeset required`. После merge в `main`
 workflow проверяет npm-пакет и через `koslibs-release` обновляет версию и `CHANGELOG.md`,
 публикует пакет и отправляет релизный commit и Git tag. Повторный запуск доступен
-через `workflow_dispatch`. Общие workflows закреплены на теге configs `v1.0.0`.
+через `workflow_dispatch`. Общие workflows закреплены на теге configs `v3.0.0`.
 
 В настройках GitHub сделайте `Changeset required` обязательным для merge.
 Для публикации используется существующий `NPM_TOKEN` либо npm Trusted Publishing,

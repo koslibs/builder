@@ -64,9 +64,11 @@ const builderRoot = resolve(directory, 'node_modules/@koslibs/builder');
 const lock = JSON.parse(await readFile(resolve(directory, 'package-lock.json'), 'utf8'));
 assert.ok(
     !Object.keys(lock.packages).some((name) =>
-        /node_modules\/(?:braces|@playwright\/test|playwright|playwright-core)$/.test(name)
+        /node_modules\/(?:braces|happy-dom|@playwright\/test|playwright|playwright-core)$/.test(
+            name
+        )
     ),
-    'a fresh consumer must not install braces'
+    'a fresh consumer must not install removed test dependencies'
 );
 run(npm, ['audit', '--cache', npmCache, '--fetch-retries=0', '--fetch-timeout=15000'], directory);
 const builderManifest = JSON.parse(await readFile(resolve(builderRoot, 'package.json'), 'utf8'));

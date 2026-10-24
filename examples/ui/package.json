@@ -25,8 +25,8 @@
         "react-dom": "^19.3.0"
     },
     "devDependencies": {
-        "@koslibs/builder": "^2.0.0",
-        "@koslibs/configs": "^1.0.0",
+        "@koslibs/builder": "^3.0.0",
+        "@koslibs/configs": "^3.0.0",
         "@types/node": "^24.19.1",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0"
